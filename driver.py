@@ -24,14 +24,18 @@ class Board(object):
 	def __init__(self, state: list):
 		super(Board, self).__init__()
 		self.state = state
-		self.dim = int(math.sqrt(len(self.state)))
+		self.dim = int(math.sqrt(len(self.state))) # find and store the board dimension 
 		self.emptyAtIndex = 0
 		self.possibleActions = []
 
+		self.findPossibleActions()
+
+	def findPossibleActions(self):
+		self.possibleActions = []
 		i = 0
 		col = 0
 		row = 0
-		while i < len(self.state): # finds row and col where the zero (empty tile) is at:
+		while i < len(self.state): # finds row and col where the zero value (empty tile) is at:
 			row = math.floor(i / self.dim)
 			col = i % self.dim
 			if self.state[i] == 0:
@@ -54,9 +58,10 @@ class Board(object):
 	def doAction(self, action):
 		try:
 			self.possibleActions.index(action)
-		except Exception as e:
-			print('Board.doAction: requested action "'+ action + '" NOT available')
-		#print(self.state)
+		except:
+			print('Board.doAction: requested action "'+ action + '" NOT possible, ignoring request.')
+			return None
+
 		while (True):
 			if action == 'Up':
 				targetCellIndex = self.emptyAtIndex - self.dim
@@ -83,10 +88,16 @@ class Board(object):
 				self.state[targetCellIndex] = 0
 				break
 			break # should never get here but protect from infinite loop
-		#print(self.state)
-
+		self.findPossibleActions() # update possibleActions
+		
 
 testCase1 = Board([3,1,2,0,4,5,6,7,8])
 testCase2 = Board([1,2,5,3,4,0,6,7,8])
 
+print(testCase1.state)
+testCase1.doAction('Left')
+print(testCase1.state)
 testCase1.doAction('Right')
+print(testCase1.state)
+testCase1.doAction('Right')
+print(testCase1.state)
