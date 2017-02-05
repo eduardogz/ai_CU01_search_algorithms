@@ -5,9 +5,8 @@ from collections import deque
 
 class Node(object):
 	"""docstring for Node"""
-	def __init__(self, uniqueId, state: list, parent, action: str, cost: int):
+	def __init__(self, state: list, parent, action: str, cost: int):
 		super(Node, self).__init__()
-		self.uniqueId = uniqueId # must be in the form: hash('parent.uniqueId + childNumber')
 		self.state = state
 		self.parent = parent
 		self.action = action
@@ -23,6 +22,7 @@ class Solver(object):
 		self.method = method
 		self.initState = initState
 
+		self.nodeDB = dict() # our little node database
 		self.visited = deque()
 		self.frontier = deque() 
 		# visited and frontier can be used as a stack or queue
@@ -39,6 +39,7 @@ class Solver(object):
 		i = 0
 		for i in range(length):
 			self.stateGoal.append(i)
+		print('goal: ', self.stateGoal)
 
 	def check_goal(self, state: list):
 		i = 0
@@ -48,46 +49,45 @@ class Solver(object):
 			i += 1
 		return True
 
-	# recursive, use solution = [] (empty list) for first call
-	def path_to_goal(self, node, solution: list):
-		if node.parent == 0 :
-			return solution
-		else:
-			solution.append(node.action)
-			self.path_to_goal(node.parent, solution)
-
-	def node_in_deque(self, nodeId, dequeHaystack):
-		for node in dequeHaystack:
-			if nodeId == node.uniqueId:
-				return True
-		return False
+	def path_to_goal(self, nodeId):
+		solution = list()
+		while nodeId != 0:
+			solution.append(self.nodeDB[nodeId].action)
+			nodeId = self.nodeDB[nodeId].parent
+		solution.reverse()
+		return solution
 
 	def bfs(self):
-		initNode = Node(0, self.initState, 0, '', 0) # root node
-		self.frontier.append(initNode)
+		print('solving: ', self.initState)
+		initNode = Node(self.initState, 0, '', 0) # root node
+		self.frontier.append(0) # set id of root node to 0
+		self.nodeDB[0] = initNode # save initNode in nodeDB
 
 		while self.frontier: # while frontier not empty
-			print(self.frontier)
 
-			visitedNode = self.frontier.popleft()
-			self.visited.append(visitedNode)
+			visitedNodeId = self.frontier.popleft()
+			print('exploring: ', visitedNodeId, ' :', self.nodeDB[visitedNodeId].state)
+			self.visited.append(visitedNodeId)
 
-			if self.check_goal(visitedNode.state):
-				print('found solution!!!: ', self.path_to_goal(visitedNode, []))
+			if self.check_goal(self.nodeDB[visitedNodeId].state):
+				print('found solution!: ', self.path_to_goal(visitedNodeId))
 				return True
 
 			else:
-				board = Board(visitedNode.state)
-				parentId = visitedNode.uniqueId
+				board = Board(self.nodeDB[visitedNodeId].state)
+				parentId = visitedNodeId
 				childNumber = 1
 				for action in board.get_possible_actions():
+					print('opening action: ', action)
+					childId = str(parentId) + '-' + str(childNumber)
 
-					childId = hash(str(parentId) + str(childNumber)) # a repeatable id
-
-					if not self.node_in_deque(childId, self.frontier) and not self.node_in_deque(childId, self.visited):
-						newNode = Node(childId, board.doAction(action), parentId, action, 1)
-						self.frontier.append(newNode)
-
+					# see if childId is in the frontier and in visited
+					if self.frontier.count(childId) < 1 and self.visited.count(childId) < 1:
+						newNode = Node(board.doAction(action), parentId, action, 1)
+						self.nodeDB[childId] = newNode
+						self.frontier.append(childId)
+						print('frontier: ', self.frontier)
+						print('visited: ', self.visited,'\n')
 					childNumber += 1
 		return False
 
@@ -182,8 +182,6 @@ class Board(object):
 			newState[targetCellIndex] = 0
 			return newState
 
-testCase1 = Board([3,1,2,0,4,5,6,7,8])
-testCase2 = Board([1,2,5,3,4,0,6,7,8])
-
 solverBFS = Solver('bfs', [3,1,2,0,4,5,6,7,8])
-solverBFS.bfs()
+#solverBFS = Solver('bfs', [1,2,5,3,4,0,6,7,8])
+print (solverBFS.bfs())
