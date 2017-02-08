@@ -7,10 +7,10 @@ Author: Eduardo Cruz, eduardo.gz@gmail.com
 These classes implement various search algorithms to solve an n-puzzle.
 
 Run Test Case 1 on the CLI:
-python driver_3.py method 3,1,2,0,4,5,6,7,8 
+python driver_3.py bfs 3,1,2,0,4,5,6,7,8 
 
 Test Case 2  on the CLI:
-python driver_3.py method 1,2,5,3,4,0,6,7,8
+python driver_3.py dfs 1,2,5,3,4,0,6,7,8
 
 """
 
@@ -55,6 +55,10 @@ class Solver(object):
 		while True:
 			if self.method == 'bfs':
 				self.bfs()
+				break
+			if self.method == 'dfs':
+				self.dfs()
+				break
 			break
 
 	def set_goal(self): 
@@ -96,54 +100,118 @@ class Solver(object):
 		return depth
 
 	def bfs(self):
+		""" Breadth First Search (BFS) """
 		self.profiler.runningTimeStart = time()
-		#print('solving: ', self.initState)
 		initNode = Node(self.initState, 0, '', 1) # root node
 		self.frontier.append(0) # set id of root node to 0
 		self.nodeDB[0] = initNode # save initNode in nodeDB
 
 		while self.frontier: # while frontier not empty
+
 			visitedNodeId = self.frontier.popleft()
-			board = Board(self.nodeDB[visitedNodeId].state, self.nodeDB[visitedNodeId].action)
+
 			if self.check_goal(self.nodeDB[visitedNodeId].state):
 				self.path_to_goal(visitedNodeId)
 				self.profiler.runningTimeEnd = time()
-				self.profiler.write_file()
-				return True
+				self.profiler.write_file() 
+				return True # we found a solution
 
 			else:
-				#print('exploring: ', visitedNodeId, ' :')
+				board = Board(self.nodeDB[visitedNodeId].state, self.nodeDB[visitedNodeId].action)
+				#print('exploring: ', visitedNodeId, ' (', self.nodeDB[visitedNodeId].action,') :')
 				#print(board.prettyPrint())
-				parentId = visitedNodeId
-				childNumber = 1
 				for action in board.get_possible_actions():
 					#print('opening action: ', action)
-					childId = hash(str(parentId) + '-' + str(childNumber)) # use hash to speed things up a little
+					newState = board.doAction(action)
+					childId = hash(str(newState)) # create an id using a hash of the state to speed things up a little
 
-					# see if childId is in the frontier and in visited
-					if self.frontier.count(childId) < 1 and self.visited.count(childId) < 1:
-						newNode = Node(board.doAction(action), parentId, action, 1)
+					# check if childId is in the frontier and in visited
+					try:
+						self.frontier.index(childId)
+						childIdInFrontier = True
+					except:
+						childIdInFrontier = False
+
+					try:
+						self.visited.index(childId)
+						childIdInVisited = True
+					except:
+						childIdInVisited = False
+
+					if not childIdInFrontier and not childIdInVisited:
+
+						newNode = Node(newState, visitedNodeId, action, 1)
 						self.nodeDB[childId] = newNode
+
 						self.frontier.append(childId)
 
-						currentFringeLen = len(self.frontier)
-						if self.profiler.maxFringeSize < currentFringeLen:
-							self.profiler.maxFringeSize = currentFringeLen
-
-						currentNodeDepth = self.calculate_depth(childId)
-						if self.profiler.maxSearchDepth < currentNodeDepth:
-							self.profiler.maxSearchDepth = currentNodeDepth
-
+						self.profiler.update_max_fringe_size(len(self.frontier))
+						self.profiler.update_search_depth(self.calculate_depth(childId))
+						
 						#print('frontier: ', self.frontier)
-						#print('visited: ', self.visited,'\n')
-
-					childNumber += 1
+						#print('visited: ', self.visited)
 				self.visited.append(visitedNodeId)
 		self.profiler.runningTimeEnd = time()
 		return False
 
+	def dfs(self):
+		""" Depth First Search (BFS) """
+		self.profiler.runningTimeStart = time()
+		initNode = Node(self.initState, 0, '', 1) # root node
+		self.frontier.append(0) # set id of root node to 0
+		self.nodeDB[0] = initNode # save initNode in nodeDB
+
+		while self.frontier: # while frontier not empty
+
+			visitedNodeId = self.frontier.pop()
+
+			if self.check_goal(self.nodeDB[visitedNodeId].state):
+				self.path_to_goal(visitedNodeId)
+				self.profiler.runningTimeEnd = time()
+				self.profiler.write_file() 
+				return True # we found a solution
+
+			else:
+				board = Board(self.nodeDB[visitedNodeId].state, self.nodeDB[visitedNodeId].action)
+				#print('exploring: ', visitedNodeId, ' (', self.nodeDB[visitedNodeId].action,') :')
+				#print(board.prettyPrint())
+				for action in board.get_possible_actions():
+					#print('opening action: ', action)
+					newState = board.doAction(action)
+					childId = hash(str(newState)) # create an id using a hash of the state to speed things up a little
+
+					# check if childId is in the frontier and in visited
+					try:
+						self.frontier.index(childId)
+						childIdInFrontier = True
+					except:
+						childIdInFrontier = False
+
+					try:
+						self.visited.index(childId)
+						childIdInVisited = True
+					except:
+						childIdInVisited = False
+
+					if not childIdInFrontier and not childIdInVisited:
+
+						newNode = Node(newState, visitedNodeId, action, 1)
+						self.nodeDB[childId] = newNode
+
+						self.frontier.append(childId)
+						#print('frontier list updated: ', len(self.frontier))
+
+						self.profiler.update_max_fringe_size(len(self.frontier))
+						self.profiler.update_search_depth(self.calculate_depth(childId))
+						
+						
+				self.visited.append(visitedNodeId)
+				#print('visited list updated: ', len(self.visited), '\n\n')
+		self.profiler.runningTimeEnd = time()
+		return False
+
 class Profiler(object):
-	"""docstring for Profiler"""
+	""" Class to save and output statistics """
 	def __init__(self):
 		super(Profiler, self).__init__()
 		self.pathToGoal = 0
@@ -155,6 +223,15 @@ class Profiler(object):
 		self.maxSearchDepth = 0
 		self.runningTimeStart = 0
 		self.runningTimeEnd = 0
+
+	def update_max_fringe_size(self, fringeLen):
+		if self.maxFringeSize < fringeLen:
+			self.maxFringeSize = fringeLen
+
+	def update_search_depth(self, depth):
+		if self.maxSearchDepth < depth:
+			self.maxSearchDepth = depth
+
 
 	def write_file(self):
 
@@ -171,11 +248,11 @@ class Profiler(object):
 		if(os.name == 'nt'):
 			output += 'max_ram_usage = 0\n'
 		else:
-			output += 'max_ram_usage: ' + str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) + '\n'
+			output += 'max_ram_usage: ' + str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024) + '\n'
 
 		file = open('output.txt', 'w')
 		file.write(output)
-		#print(output)
+		print(output)
 
 class Board(object):
 	""" Low-level methods for the board """
@@ -271,5 +348,5 @@ class Board(object):
 # Entry point
 cliMethod = sys.argv[1]
 cliState = list ( map ( int, list(sys.argv[2].split(',') ) ) )
-#print('running: ' + cliMethod + ' on :', cliState)
+print('running: ' + cliMethod + ' on :', cliState)
 solver = Solver(cliMethod, cliState)
