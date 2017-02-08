@@ -43,41 +43,30 @@ class Solver(object):
 
 		self.nodeDB = dict() # our little node database
 		
-		# visited and frontier can be used as a stack or queue
+		# explored and fringe are deque() lists that can be used as a stack or as a queue
 		# use .append() and .popleft() to behave as queue (FIFO)
 		# use .append() and .pop() to behave as stack (LIFO)
-		self.visited = deque()
-		self.frontier = deque() 
+		self.explored = deque()
+		self.fringe = deque() 
 
 		self.profiler = Profiler()
 		self.set_goal()
 
 		while True:
-			if self.method == 'bfs':
-				self.bfs()
-				break
-			if self.method == 'dfs':
-				self.dfs()
+			if self.method == 'bfs' or self.method == 'dfs':
+				self.bfs_dfs(self.method)
 				break
 			break
 
 	def set_goal(self): 
-		"""  Generates the goal state, an ordered list of integers from 0 to the size of provided initState """
-		self.stateGoal = []
+		"""  Generates the goal state, an ordered list of integers from 0 to the size of provided initState; and gets its ID """
+		stateGoal = list()
 		length = int(len(self.initState))
 		i = 0
 		for i in range(length):
-			self.stateGoal.append(i)
-		#print('goal: ', self.stateGoal)
-
-	def check_goal(self, state: list):
-		""" Looks if the provided state matches the goal state """
-		i = 0
-		for item in state:
-			if item != self.stateGoal[i]:
-				return False
-			i += 1
-		return True
+			stateGoal.append(i)
+		self.goalId = self.create_node_id(stateGoal)
+		##print('goal: ', self.goalId)
 
 	def path_to_goal(self, nodeId):
 		""" Calculates the path to root and reverses it to provide the path to goal, also prepares profiler stats """
@@ -89,8 +78,8 @@ class Solver(object):
 			self.profiler.searchDepth += 1
 		solution.reverse()
 		self.profiler.pathToGoal = solution
-		self.profiler.fringeSize = len(self.frontier)
-		self.profiler.nodesExpanded = len(self.visited)
+		self.profiler.fringeSize = len(self.fringe)
+		self.profiler.nodesExpanded = len(self.explored)
 
 	def calculate_depth(self, nodeId):
 		depth = 0
@@ -99,114 +88,68 @@ class Solver(object):
 			nodeId = self.nodeDB[nodeId].parent
 		return depth
 
-	def bfs(self):
-		""" Breadth First Search (BFS) """
+	def create_node_id(self, state):
+		""" Creates an ID based on the state by converting each element to string, joining them, and casting to integer """
+		return int(''.join(map(str, state)))
+
+	def bfs_dfs(self, method):
+		""" Breadth First Search (BFS) and Depth First Search (DFS) """
 		self.profiler.runningTimeStart = time()
 		initNode = Node(self.initState, 0, '', 1) # root node
-		self.frontier.append(0) # set id of root node to 0
 		self.nodeDB[0] = initNode # save initNode in nodeDB
+		self.fringe.append(0) # set id of root node to 0 and add to fringe
+		
+		while self.fringe: # while fringe not empty
+			#print('*** START ***')
+			if method == 'bfs':
+				nodeIdFromFringe = self.fringe.popleft() # queue
+			if method == 'dfs':
+				nodeIdFromFringe = self.fringe.pop() # stack
+			#print('exploring node:', nodeIdFromFringe, 'created from (', self.nodeDB[nodeIdFromFringe].action,')')
 
-		while self.frontier: # while frontier not empty
-
-			visitedNodeId = self.frontier.popleft()
-
-			if self.check_goal(self.nodeDB[visitedNodeId].state):
-				self.path_to_goal(visitedNodeId)
+			if nodeIdFromFringe == self.goalId:
+				self.path_to_goal(nodeIdFromFringe)
 				self.profiler.runningTimeEnd = time()
 				self.profiler.write_file() 
 				return True # we found a solution
 
 			else:
-				board = Board(self.nodeDB[visitedNodeId].state, self.nodeDB[visitedNodeId].action)
-				#print('exploring: ', visitedNodeId, ' (', self.nodeDB[visitedNodeId].action,') :')
-				#print(board.prettyPrint())
+				board = Board(self.nodeDB[nodeIdFromFringe].state, self.nodeDB[nodeIdFromFringe].action)
+				#print(board.pretty_out())
 				for action in board.get_possible_actions():
-					#print('opening action: ', action)
-					newState = board.doAction(action)
-					childId = hash(str(newState)) # create an id using a hash of the state to speed things up a little
+					##print('opening action: ', action)
+					newState = board.do_action(action)
+					childId = self.create_node_id(newState)
 
-					# check if childId is in the frontier and in visited
+					# check if childId is in the fringe and in explored deques
+					childIdInFringe = False
+					childIdInExplored = False
 					try:
-						self.frontier.index(childId)
-						childIdInFrontier = True
+						self.fringe.index(childId)
+						childIdInFringe = True
+						try:
+							self.explored.index(childId)
+							childIdInExplored = True
+						except:
+							pass
 					except:
-						childIdInFrontier = False
+						pass
 
-					try:
-						self.visited.index(childId)
-						childIdInVisited = True
-					except:
-						childIdInVisited = False
+					if not childIdInFringe and not childIdInExplored:
 
-					if not childIdInFrontier and not childIdInVisited:
-
-						newNode = Node(newState, visitedNodeId, action, 1)
+						newNode = Node(newState, nodeIdFromFringe, action, 1)
 						self.nodeDB[childId] = newNode
 
-						self.frontier.append(childId)
+						self.fringe.append(childId)
+						#print('created new node', childId, action, '; added to fringe, len:', len(self.fringe))
 
-						self.profiler.update_max_fringe_size(len(self.frontier))
+						self.profiler.update_max_fringe_size(len(self.fringe))
 						self.profiler.update_search_depth(self.calculate_depth(childId))
 						
-						#print('frontier: ', self.frontier)
-						#print('visited: ', self.visited)
-				self.visited.append(visitedNodeId)
-		self.profiler.runningTimeEnd = time()
-		return False
+				self.explored.append(nodeIdFromFringe)
+				#print('added node', nodeIdFromFringe, 'to explored, len: ', len(self.explored))
+				#print('*** END ***\n\n')
 
-	def dfs(self):
-		""" Depth First Search (BFS) """
-		self.profiler.runningTimeStart = time()
-		initNode = Node(self.initState, 0, '', 1) # root node
-		self.frontier.append(0) # set id of root node to 0
-		self.nodeDB[0] = initNode # save initNode in nodeDB
-
-		while self.frontier: # while frontier not empty
-
-			visitedNodeId = self.frontier.pop()
-
-			if self.check_goal(self.nodeDB[visitedNodeId].state):
-				self.path_to_goal(visitedNodeId)
-				self.profiler.runningTimeEnd = time()
-				self.profiler.write_file() 
-				return True # we found a solution
-
-			else:
-				board = Board(self.nodeDB[visitedNodeId].state, self.nodeDB[visitedNodeId].action)
-				#print('exploring: ', visitedNodeId, ' (', self.nodeDB[visitedNodeId].action,') :')
-				#print(board.prettyPrint())
-				for action in board.get_possible_actions():
-					#print('opening action: ', action)
-					newState = board.doAction(action)
-					childId = hash(str(newState)) # create an id using a hash of the state to speed things up a little
-
-					# check if childId is in the frontier and in visited
-					try:
-						self.frontier.index(childId)
-						childIdInFrontier = True
-					except:
-						childIdInFrontier = False
-
-					try:
-						self.visited.index(childId)
-						childIdInVisited = True
-					except:
-						childIdInVisited = False
-
-					if not childIdInFrontier and not childIdInVisited:
-
-						newNode = Node(newState, visitedNodeId, action, 1)
-						self.nodeDB[childId] = newNode
-
-						self.frontier.append(childId)
-						#print('frontier list updated: ', len(self.frontier))
-
-						self.profiler.update_max_fringe_size(len(self.frontier))
-						self.profiler.update_search_depth(self.calculate_depth(childId))
-						
-						
-				self.visited.append(visitedNodeId)
-				#print('visited list updated: ', len(self.visited), '\n\n')
 		self.profiler.runningTimeEnd = time()
 		return False
 
@@ -282,7 +225,7 @@ class Board(object):
 			row = math.floor(i / self.dim)
 			col = i % self.dim
 			if self.state[i] == 0:
-				##print('Found empty slot on: (' + str(row) + ',' + str(col) + ')')
+				###print('Found empty slot on: (' + str(row) + ',' + str(col) + ')')
 				self.emptyAtIndex = i
 				break
 			i = i+1
@@ -299,12 +242,12 @@ class Board(object):
 		if col < self.dim - 1 and self.action != 'Left':
 			self.possibleActions.append('Right')
 
-	def doAction(self, action):
+	def do_action(self, action):
 		""" Execute an action to current state and return the resulting new state """
 		try:
 			self.possibleActions.index(action)
 		except:
-			print('Board.doAction: requested action "'+ action + '" NOT possible, ignoring request.')
+			#print('Board.do_action: requested action "'+ action + '" NOT possible, ignoring request.')
 			return None
 
 		newState = list(self.state)
@@ -333,20 +276,20 @@ class Board(object):
 			newState[self.emptyAtIndex] = targetCellValue
 			newState[targetCellIndex] = 0
 			return newState
-	def prettyPrint(self):
+	def pretty_out(self):
 		""" A prettier output for debugging """
 		stateLen = len(self.state)
+		prettyRow = ''
 		prettyOut = '\n'
 		for i in range(stateLen):
-			prettyOut += str(self.state[i]) + ' '
+			prettyRow += str(self.state[i]) + ' '
 			if (i + 1) % self.dim == 0:
-				print(prettyOut)
-				prettyOut = ''
-		prettyOut = '\n'
+				prettyOut += prettyRow + '\n'
+				prettyRow = ''
 		return prettyOut
 
 # Entry point
 cliMethod = sys.argv[1]
 cliState = list ( map ( int, list(sys.argv[2].split(',') ) ) )
-print('running: ' + cliMethod + ' on :', cliState)
+#print('running: ' + cliMethod + ' on :', cliState)
 solver = Solver(cliMethod, cliState)
