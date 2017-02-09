@@ -24,12 +24,16 @@ from time import time
 
 class Node(object):
 	""" Node object used to build and traverse the tree """
-	def __init__(self, state: list, parent, action: str, cost: int):
+	def __init__(self, nid, state: list, parent, action: str, cost: int):
 		super(Node, self).__init__()
+		self.nid = nid
 		self.state = state
 		self.parent = parent
 		self.action = action
 		self.cost = cost
+
+	def __hash__(self):
+		return hash(self.nid)
 
 	def toString(self):
 		return '(' + str(self.state) + ', ' + str(type(self.parent)) + ', ' + self.action + ',' + str(self.cost) + ')'
@@ -41,13 +45,13 @@ class Solver(object):
 		self.method = method
 		self.initState = initState
 
-		self.nodeDB = dict() # our little node database
+		#self.nodeDB = dict() # our little node database
 		
-		# explored and fringe are deque() lists that can be used as a stack or as a queue
-		# use .append() and .popleft() to behave as queue (FIFO)
-		# use .append() and .pop() to behave as stack (LIFO)
-		self.explored = deque()
-		self.fringe = deque() 
+		# fringe is a deque() that can be used as a stack or as a queue
+		# use fringe.append() and fringe.popleft() to behave as queue (FIFO)
+		# use fringe.append() and fringe.pop() to behave as stack (LIFO)
+		self.fringe = deque()
+		self.explored = dict()
 
 		self.profiler = Profiler()
 		self.set_goal()
@@ -68,25 +72,45 @@ class Solver(object):
 		self.goalId = self.create_node_id(stateGoal)
 		##print('goal: ', self.goalId)
 
-	def path_to_goal(self, nodeId):
+	def path_to_goal(self, node):
 		""" Calculates the path to root and reverses it to provide the path to goal, also prepares profiler stats """
 		solution = list()
-		while nodeId != 0:
-			solution.append(self.nodeDB[nodeId].action)
-			nodeId = self.nodeDB[nodeId].parent
-			self.profiler.costOfPath = self.profiler.costOfPath + self.nodeDB[nodeId].cost
+		while node.parent != -1:
+			solution.append(node.action)
+			node = self.explored[node.parent]
+			self.profiler.costOfPath = self.profiler.costOfPath + node.cost
 			self.profiler.searchDepth += 1
 		solution.reverse()
 		self.profiler.pathToGoal = solution
 		self.profiler.fringeSize = len(self.fringe)
 		self.profiler.nodesExpanded = len(self.explored)
 
+
 	def calculate_depth(self, nodeId):
-		depth = 0
-		while nodeId != 0:
+		depth = 1
+		#print('calculating depth of', nodeId)
+		while True:
+			if nodeId == -1:
+				return depth
 			depth += 1
-			nodeId = self.nodeDB[nodeId].parent
-		return depth
+			try:
+				nodeId = self.explored[nodeId].parent
+			except:
+				print(nodeId, 'not found')
+		return 0
+
+	def nid_in_fringe(self, nid):
+		for nodeInFringe in self.fringe:
+			if nid == nodeInFringe.nid:
+				return True
+		return False
+
+	def nid_in_explored(self, nid):
+		try:
+			self.explored[nid]
+			return True
+		except:
+			return False
 
 	def create_node_id(self, state):
 		""" Creates an ID based on the state by converting each element to string, joining them, and casting to integer """
@@ -95,60 +119,54 @@ class Solver(object):
 	def bfs_dfs(self, method):
 		""" Breadth First Search (BFS) and Depth First Search (DFS) """
 		self.profiler.runningTimeStart = time()
-		initNode = Node(self.initState, 0, '', 1) # root node
-		self.nodeDB[0] = initNode # save initNode in nodeDB
-		self.fringe.append(0) # set id of root node to 0 and add to fringe
+		initNode = Node(0, self.initState, -1, '', 1) # root node
+		#self.nodeDB[0] = initNode # save initNode in nodeDB
+		self.fringe.append(initNode) # set id of root node to 0 and add to fringe
+		counter = 0
 		
 		while self.fringe: # while fringe not empty
 			#print('*** START ***')
 			if method == 'bfs':
-				nodeIdFromFringe = self.fringe.popleft() # queue
+				nodeFromFringe = self.fringe.popleft() # queue
 			if method == 'dfs':
-				nodeIdFromFringe = self.fringe.pop() # stack
-			#print('exploring node:', nodeIdFromFringe, 'created from (', self.nodeDB[nodeIdFromFringe].action,')')
+				nodeFromFringe = self.fringe.pop() # stack
 
-			if nodeIdFromFringe == self.goalId:
-				self.path_to_goal(nodeIdFromFringe)
+			#print('exploring node:', nodeFromFringe.nid, 'created from (', nodeFromFringe.action,')')
+			if nodeFromFringe.nid == self.goalId:
+				self.path_to_goal(nodeFromFringe)
 				self.profiler.runningTimeEnd = time()
 				self.profiler.write_file() 
 				return True # we found a solution
 
 			else:
-				board = Board(self.nodeDB[nodeIdFromFringe].state, self.nodeDB[nodeIdFromFringe].action)
+				board = Board(nodeFromFringe.state, nodeFromFringe.action)
 				#print(board.pretty_out())
 				for action in board.get_possible_actions():
-					##print('opening action: ', action)
+					#print('opening action: ', action)
 					newState = board.do_action(action)
 					childId = self.create_node_id(newState)
 
-					# check if childId is in the fringe and in explored deques
-					childIdInFringe = False
-					childIdInExplored = False
-					try:
-						self.fringe.index(childId)
-						childIdInFringe = True
-						try:
-							self.explored.index(childId)
-							childIdInExplored = True
-						except:
-							pass
-					except:
-						pass
+					#if self.nid_in_fringe(childId):
+						#print('childId already exists in Fringe!', childId)
 
-					if not childIdInFringe and not childIdInExplored:
-
-						newNode = Node(newState, nodeIdFromFringe, action, 1)
-						self.nodeDB[childId] = newNode
-
-						self.fringe.append(childId)
+					# check if childId is in the fringe and in explored 
+					if not self.nid_in_fringe(childId) and not self.nid_in_explored(childId):
+						newNode = Node(childId, newState, nodeFromFringe.nid, action, 1)
+						#self.nodeDB[childId] = newNode
+						self.fringe.append(newNode)
 						#print('created new node', childId, action, '; added to fringe, len:', len(self.fringe))
 
 						self.profiler.update_max_fringe_size(len(self.fringe))
-						self.profiler.update_search_depth(self.calculate_depth(childId))
+						self.profiler.update_search_depth(self.calculate_depth(nodeFromFringe.parent))
 						
-				self.explored.append(nodeIdFromFringe)
-				#print('added node', nodeIdFromFringe, 'to explored, len: ', len(self.explored))
+				self.explored[nodeFromFringe.nid] = nodeFromFringe
+				self.calculate_depth(nodeFromFringe.parent)
+				#print('added node', nodeFromFringe.nid, 'to explored, len: ', len(self.explored))
 				#print('*** END ***\n\n')
+				counter += 1
+				print('STEPS:    ', counter)
+				print('FRI SIZE: ',len(self.fringe))
+				print('EXP SIZE: ',len(self.explored),'\n')
 
 		self.profiler.runningTimeEnd = time()
 		return False
