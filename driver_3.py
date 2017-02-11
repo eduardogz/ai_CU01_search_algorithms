@@ -22,36 +22,16 @@ if os.name != 'nt':
 from collections import deque
 from time import time
 
-class Node(object):
-	""" Node object used to build and traverse the tree """
-	def __init__(self, nid, state: list, parent, action: str, cost: int):
-		super(Node, self).__init__()
-		self.nid = nid
-		self.state = state
-		self.parent = parent
-		self.action = action
-		self.cost = cost
-
-	def __hash__(self):
-		return hash(self.nid)
-
-	def toString(self):
-		return '(' + str(self.state) + ', ' + str(type(self.parent)) + ', ' + self.action + ',' + str(self.cost) + ')'
-
 class Solver(object):
 	""" Main class to select method and hold common data structures """
-	def __init__(self, method: str, initState: list):
+	def __init__(self, method: str, initState: tuple):
 		super(Solver, self).__init__()
 		self.method = method
 		self.initState = initState
 
-		#self.nodeDB = dict() # our little node database
-		
-		# fringe is a deque() that can be used as a stack or as a queue
-		# use fringe.append() and fringe.popleft() to behave as queue (FIFO)
-		# use fringe.append() and fringe.pop() to behave as stack (LIFO)
-		self.fringe = deque()
-		self.explored = dict()
+		self.fringe = deque() # saves states only, uses a double ended queue, can behave both as a FIFO and as a LIFO
+		self.explored = set() # saves states only, uses a set for speed
+		self.nodeDB = dict() # saves nodes details
 
 		self.profiler = Profiler()
 		self.set_goal()
@@ -62,111 +42,79 @@ class Solver(object):
 				break
 			break
 
+	def create_node(self, stateParent: tuple, action: str, cost: int, depth: int):
+ 		""" Returns a tuple with the node information to be saved in nodeDB with the node state as key"""
+ 		return tuple(list((stateParent, action, cost, depth)))
+
 	def set_goal(self): 
-		"""  Generates the goal state, an ordered list of integers from 0 to the size of provided initState; and gets its ID """
+		"""  Generates the goal state, a tuple  from 0 to the size of provided initState; and gets its ID """
 		stateGoal = list()
 		length = int(len(self.initState))
 		i = 0
 		for i in range(length):
 			stateGoal.append(i)
-		self.goalId = self.create_node_id(stateGoal)
-		##print('goal: ', self.goalId)
+		self.stateGoal = tuple(stateGoal) # save the list as a tuple
+		#print('stateGoal: ', self.stateGoal)
 
-	def path_to_goal(self, node):
+	def path_to_goal(self, state):
 		""" Calculates the path to root and reverses it to provide the path to goal, also prepares profiler stats """
 		solution = list()
-		while node.parent != -1:
-			solution.append(node.action)
-			node = self.explored[node.parent]
-			self.profiler.costOfPath = self.profiler.costOfPath + node.cost
+		while self.nodeDB[state][0] != None: # root node has None as parent
+			solution.append(self.nodeDB[state][1])
+			state =  self.nodeDB[state][0] # start with the node parent, because when solution is found node[0] has the goal state
+			self.profiler.costOfPath = self.profiler.costOfPath + self.nodeDB[state][2]
 			self.profiler.searchDepth += 1
 		solution.reverse()
 		self.profiler.pathToGoal = solution
 		self.profiler.fringeSize = len(self.fringe)
-		self.profiler.nodesExpanded = len(self.explored)
-
-
-	def calculate_depth(self, nodeId):
-		depth = 1
-		#print('calculating depth of', nodeId)
-		while True:
-			if nodeId == -1:
-				return depth
-			depth += 1
-			try:
-				nodeId = self.explored[nodeId].parent
-			except:
-				print(nodeId, 'not found')
-		return 0
-
-	def nid_in_fringe(self, nid):
-		for nodeInFringe in self.fringe:
-			if nid == nodeInFringe.nid:
-				return True
-		return False
-
-	def nid_in_explored(self, nid):
-		try:
-			self.explored[nid]
-			return True
-		except:
-			return False
-
-	def create_node_id(self, state):
-		""" Creates an ID based on the state by converting each element to string, joining them, and casting to integer """
-		return int(''.join(map(str, state)))
 
 	def bfs_dfs(self, method):
 		""" Breadth First Search (BFS) and Depth First Search (DFS) """
 		self.profiler.runningTimeStart = time()
-		initNode = Node(0, self.initState, -1, '', 1) # root node
-		#self.nodeDB[0] = initNode # save initNode in nodeDB
-		self.fringe.append(initNode) # set id of root node to 0 and add to fringe
-		counter = 0
+		initNode = self.create_node(None, '', 1, 0) # root node
+		self.nodeDB[self.initState] = initNode
+		self.fringe.append(self.initState)
 		
 		while self.fringe: # while fringe not empty
 			#print('*** START ***')
 			if method == 'bfs':
-				nodeFromFringe = self.fringe.popleft() # queue
+				stateFromFringe = self.fringe.popleft() # queue
 			if method == 'dfs':
-				nodeFromFringe = self.fringe.pop() # stack
+				stateFromFringe = self.fringe.pop() # stack
+			
+			self.explored.add(stateFromFringe)
+			#print('add:', str(nodeFromFringe), 'len(explored): ', len(self.explored))
 
-			#print('exploring node:', nodeFromFringe.nid, 'created from (', nodeFromFringe.action,')')
-			if nodeFromFringe.nid == self.goalId:
-				self.path_to_goal(nodeFromFringe)
+			if stateFromFringe == self.stateGoal:
+				#print('found it! ')
+				self.path_to_goal(stateFromFringe)
 				self.profiler.runningTimeEnd = time()
 				self.profiler.write_file() 
-				return True # we found a solution
+				return True
 
 			else:
-				board = Board(nodeFromFringe.state, nodeFromFringe.action)
+				#print('exploring node:', str(nodeFromFringe))
+				self.profiler.nodesExpanded += 1
+				board = Board(stateFromFringe, self.nodeDB[stateFromFringe][2])
 				#print(board.pretty_out())
-				for action in board.get_possible_actions():
+				possibleActions = board.get_possible_actions()
+				if self.method == 'dfs':
+					possibleActions.reverse()
+				for action in possibleActions:
 					#print('opening action: ', action)
 					newState = board.do_action(action)
-					childId = self.create_node_id(newState)
+					#print('new node', str(newState), ', add to fringe: ', len(self.fringe))
 
-					#if self.nid_in_fringe(childId):
-						#print('childId already exists in Fringe!', childId)
+					if (newState not in self.fringe) and (newState not in self.explored):
 
-					# check if childId is in the fringe and in explored 
-					if not self.nid_in_fringe(childId) and not self.nid_in_explored(childId):
-						newNode = Node(childId, newState, nodeFromFringe.nid, action, 1)
-						#self.nodeDB[childId] = newNode
-						self.fringe.append(newNode)
-						#print('created new node', childId, action, '; added to fringe, len:', len(self.fringe))
-
-						self.profiler.update_max_fringe_size(len(self.fringe))
-						self.profiler.update_search_depth(self.calculate_depth(nodeFromFringe.parent))
+						self.nodeDB[newState] = self.create_node(stateFromFringe, action, 1, self.nodeDB[stateFromFringe][3]+1)
+						self.fringe.append(newState)
 						
-				self.explored[nodeFromFringe.nid] = nodeFromFringe
-				self.calculate_depth(nodeFromFringe.parent)
-				#print('added node', nodeFromFringe.nid, 'to explored, len: ', len(self.explored))
-				#print('*** END ***\n\n')
-				counter += 1
-				print('STEPS:    ', counter)
-				print('FRI SIZE: ',len(self.fringe))
-				print('EXP SIZE: ',len(self.explored),'\n')
+						self.profiler.update_max_fringe_size(len(self.fringe))
+						self.profiler.update_max_search_depth(self.nodeDB[newState][3])
+
+			#print('*** END ***\n\n')
+			#print(str(self.profiler.nodesExpanded))
 
 		self.profiler.runningTimeEnd = time()
 		return False
@@ -189,14 +137,15 @@ class Profiler(object):
 		if self.maxFringeSize < fringeLen:
 			self.maxFringeSize = fringeLen
 
-	def update_search_depth(self, depth):
+	def update_max_search_depth(self, depth):
 		if self.maxSearchDepth < depth:
 			self.maxSearchDepth = depth
 
 
 	def write_file(self):
 
-		runningTime = self.runningTimeEnd - self.runningTimeStart
+		runningTime = str(self.runningTimeEnd - self.runningTimeStart)
+		roundedRunningTime = '{:.10}'.format(runningTime)
 		output = 'path_to_goal: ' + str(self.pathToGoal) + '\n'
 		output += 'cost_of_path: ' + str(self.costOfPath) + '\n'
 		output += 'nodes_expanded: ' + str(self.nodesExpanded) + '\n'
@@ -204,7 +153,7 @@ class Profiler(object):
 		output += 'max_fringe_size: ' + str(self.maxFringeSize) + '\n'
 		output += 'search_depth: ' + str(self.searchDepth) + '\n'
 		output += 'max_search_depth: ' + str(self.maxSearchDepth) + '\n'
-		output += 'running_time: ' + str(runningTime) + '\n'
+		output += 'running_time: ' + roundedRunningTime + '\n'
 		
 		if(os.name == 'nt'):
 			output += 'max_ram_usage = 0\n'
@@ -227,9 +176,6 @@ class Board(object):
 
 		self.find_possible_actions()
 
-	def get_state(self):
-		return self.state
-
 	def get_possible_actions(self):
 		return self.possibleActions
 
@@ -243,7 +189,7 @@ class Board(object):
 			row = math.floor(i / self.dim)
 			col = i % self.dim
 			if self.state[i] == 0:
-				###print('Found empty slot on: (' + str(row) + ',' + str(col) + ')')
+				#print('Found empty slot on: (' + str(row) + ',' + str(col) + ')')
 				self.emptyAtIndex = i
 				break
 			i = i+1
@@ -275,25 +221,26 @@ class Board(object):
 			targetCellValue = self.state[targetCellIndex]
 			newState[self.emptyAtIndex] = targetCellValue
 			newState[targetCellIndex] = 0
-			return newState
+			return tuple(newState)
 		if action == 'Down':
 			targetCellIndex = self.emptyAtIndex + self.dim
 			targetCellValue = self.state[targetCellIndex]
 			newState[self.emptyAtIndex] = targetCellValue
 			newState[targetCellIndex] = 0
-			return newState
+			return tuple(newState)
 		if action == 'Left':
 			targetCellIndex = self.emptyAtIndex - 1
 			targetCellValue = self.state[targetCellIndex]
 			newState[self.emptyAtIndex] = targetCellValue
 			newState[targetCellIndex] = 0
-			return newState
+			return tuple(newState)
 		if action == 'Right':
 			targetCellIndex = self.emptyAtIndex + 1
 			targetCellValue = self.state[targetCellIndex]
 			newState[self.emptyAtIndex] = targetCellValue
 			newState[targetCellIndex] = 0
-			return newState
+			return tuple(newState)
+
 	def pretty_out(self):
 		""" A prettier output for debugging """
 		stateLen = len(self.state)
@@ -308,6 +255,6 @@ class Board(object):
 
 # Entry point
 cliMethod = sys.argv[1]
-cliState = list ( map ( int, list(sys.argv[2].split(',') ) ) )
+cliState = tuple ( map ( int, list(sys.argv[2].split(',') ) ) )
 #print('running: ' + cliMethod + ' on :', cliState)
 solver = Solver(cliMethod, cliState)
