@@ -26,20 +26,25 @@ class Solver(object):
 	""" Main class to select method and hold common data structures """
 	def __init__(self, method: str, initState: tuple):
 		super(Solver, self).__init__()
-		self.method = method
 		self.initState = initState
 
-		self.fringe = deque() # saves states only, uses a double ended queue, can behave both as a FIFO and as a LIFO
-		self.explored = set() # saves states only, uses a set for speed
-		self.nodeDB = dict() # saves nodes details
+		self.fringe = deque() # saves states tuples, uses a double ended queue, can behave both as a FIFO and as a LIFO
+		self.explored = set() # saves states tuples; uses a set for speed when checking if a state has been explored
+		self.nodeDB = dict() # saves nodes details for every node state: nodeState -> nodeParent, action, cost, depth
 
 		self.profiler = Profiler()
 		self.set_goal()
 
 		while True:
-			if self.method == 'bfs' or self.method == 'dfs':
-				self.bfs_dfs(self.method)
+			if method == 'bfs':
+				self.bfs()
 				break
+			if method == 'dfs':
+			 	self.dfs()
+			 	break
+			if method == 'ast':
+			 	self.ast()
+			 	break
 			break
 
 	def create_node(self, stateParent: tuple, action: str, cost: int, depth: int):
@@ -68,8 +73,8 @@ class Solver(object):
 		self.profiler.pathToGoal = solution
 		self.profiler.fringeSize = len(self.fringe)
 
-	def bfs_dfs(self, method):
-		""" Breadth First Search (BFS) and Depth First Search (DFS) """
+	def bfs(self):
+		""" Breadth First Search (BFS) """
 		self.profiler.runningTimeStart = time()
 		initNode = self.create_node(None, '', 1, 0) # root node
 		self.nodeDB[self.initState] = initNode
@@ -77,10 +82,7 @@ class Solver(object):
 		
 		while self.fringe: # while fringe not empty
 			#print('*** START ***')
-			if method == 'bfs':
-				stateFromFringe = self.fringe.popleft() # queue
-			if method == 'dfs':
-				stateFromFringe = self.fringe.pop() # stack
+			stateFromFringe = self.fringe.popleft() # queue
 			
 			self.explored.add(stateFromFringe)
 			#print('add:', str(nodeFromFringe), 'len(explored): ', len(self.explored))
@@ -98,8 +100,99 @@ class Solver(object):
 				board = Board(stateFromFringe, self.nodeDB[stateFromFringe][2])
 				#print(board.pretty_out())
 				possibleActions = board.get_possible_actions()
-				if self.method == 'dfs':
-					possibleActions.reverse()
+				for action in possibleActions:
+					#print('opening action: ', action)
+					newState = board.do_action(action)
+					#print('new node', str(newState), ', add to fringe: ', len(self.fringe))
+
+					if (newState not in self.fringe) and (newState not in self.explored):
+
+						self.nodeDB[newState] = self.create_node(stateFromFringe, action, 1, self.nodeDB[stateFromFringe][3]+1)
+						self.fringe.append(newState)
+						
+						self.profiler.update_max_fringe_size(len(self.fringe))
+						self.profiler.update_max_search_depth(self.nodeDB[newState][3])
+
+			#print('*** END ***\n\n')
+			#print(str(self.profiler.nodesExpanded))
+
+		self.profiler.runningTimeEnd = time()
+		return False
+
+	def dfs(self):
+		""" Depth First Search (DFS) """
+		self.profiler.runningTimeStart = time()
+		initNode = self.create_node(None, '', 1, 0) # root node
+		self.nodeDB[self.initState] = initNode
+		self.fringe.append(self.initState)
+		
+		while self.fringe: # while fringe not empty
+			#print('*** START ***')
+			stateFromFringe = self.fringe.pop() # stack
+			
+			self.explored.add(stateFromFringe)
+			#print('add:', str(nodeFromFringe), 'len(explored): ', len(self.explored))
+
+			if stateFromFringe == self.stateGoal:
+				#print('found it! ')
+				self.path_to_goal(stateFromFringe)
+				self.profiler.runningTimeEnd = time()
+				self.profiler.write_file() 
+				return True
+
+			else:
+				#print('exploring node:', str(nodeFromFringe))
+				self.profiler.nodesExpanded += 1
+				board = Board(stateFromFringe, self.nodeDB[stateFromFringe][2])
+				#print(board.pretty_out())
+				possibleActions = board.get_possible_actions()
+				possibleActions.reverse() # reverse-UDLR order
+				for action in possibleActions:
+					#print('opening action: ', action)
+					newState = board.do_action(action)
+					#print('new node', str(newState), ', add to fringe: ', len(self.fringe))
+
+					if (newState not in self.fringe) and (newState not in self.explored):
+
+						self.nodeDB[newState] = self.create_node(stateFromFringe, action, 1, self.nodeDB[stateFromFringe][3]+1)
+						self.fringe.append(newState)
+						
+						self.profiler.update_max_fringe_size(len(self.fringe))
+						self.profiler.update_max_search_depth(self.nodeDB[newState][3])
+
+			#print('*** END ***\n\n')
+			#print(str(self.profiler.nodesExpanded))
+
+		self.profiler.runningTimeEnd = time()
+		return False
+
+	def ast(self):
+		""" A-Star (A*) """
+		self.profiler.runningTimeStart = time()
+		initNode = self.create_node(None, '', 1, 0) # root node
+		self.nodeDB[self.initState] = initNode
+		self.fringe.append(self.initState)
+		
+		while self.fringe: # while fringe not empty
+			#print('*** START ***')
+			stateFromFringe = self.fringe.popleft() # queue
+			
+			self.explored.add(stateFromFringe)
+			#print('add:', str(nodeFromFringe), 'len(explored): ', len(self.explored))
+
+			if stateFromFringe == self.stateGoal:
+				#print('found it! ')
+				self.path_to_goal(stateFromFringe)
+				self.profiler.runningTimeEnd = time()
+				self.profiler.write_file() 
+				return True
+
+			else:
+				#print('exploring node:', str(nodeFromFringe))
+				self.profiler.nodesExpanded += 1
+				board = Board(stateFromFringe, self.nodeDB[stateFromFringe][2])
+				#print(board.pretty_out())
+				possibleActions = board.get_possible_actions()
 				for action in possibleActions:
 					#print('opening action: ', action)
 					newState = board.do_action(action)
