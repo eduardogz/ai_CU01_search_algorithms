@@ -103,7 +103,7 @@ class Solver:
 			else:
 				#print('exploring node:', str(nodeFromFringe))
 				self.profiler.nodesExpanded += 1
-				board = Board(stateFromFringe, self.nodeDB[stateFromFringe][2])
+				board = Board(stateFromFringe, self.nodeDB[stateFromFringe][1])
 				#print(board.pretty_out())
 				possibleActions = board.get_possible_actions()
 				for action in possibleActions:
@@ -149,7 +149,7 @@ class Solver:
 			else:
 				#print('exploring node:', str(nodeFromFringe))
 				self.profiler.nodesExpanded += 1
-				board = Board(stateFromFringe, self.nodeDB[stateFromFringe][2])
+				board = Board(stateFromFringe, self.nodeDB[stateFromFringe][1])
 				#print(board.pretty_out())
 				possibleActions = board.get_possible_actions()
 				possibleActions.reverse() # reverse-UDLR order
@@ -196,7 +196,7 @@ class Solver:
 			else:
 				#print('exploring node:', str(nodeFromFringe))
 				self.profiler.nodesExpanded += 1
-				board = Board(stateFromFringe, self.nodeDB[stateFromFringe][2])
+				board = Board(stateFromFringe, self.nodeDB[stateFromFringe][1])
 				#print(board.pretty_out())
 				possibleActions = board.get_possible_actions()
 				for action in possibleActions:
@@ -265,7 +265,7 @@ class Profiler:
 
 class Board:
 	""" Low-level methods for the board """
-	def __init__(self, state: list, action):
+	def __init__(self, state: list, action: str):
 		super(Board, self).__init__()
 		self.state = state
 		self.dim = int(math.sqrt(len(self.state))) # find and store the board dimension 
