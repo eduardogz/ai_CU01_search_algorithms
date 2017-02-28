@@ -6,23 +6,29 @@ Author: Eduardo Cruz, eduardo.gz@gmail.com
 
 These classes implement various search algorithms to solve an n-puzzle.
 
-Run Test Case 1 on the CLI:
-python driver_3.py bfs 3,1,2,0,4,5,6,7,8 
+Initial state case 1: 3,1,2,0,4,5,6,7,8 
+Initial state case 2: 1,2,5,3,4,0,6,7,8
 
-Test Case 2  on the CLI:
-python driver_3.py dfs 1,2,5,3,4,0,6,7,8
+Path to python 3.6:
+"C:\Program Files (x86)\Python36-32\python.exe"
+
+Run:
+python driver_3.py METHOD STATE
+
+Example:
+"C:\Program Files (x86)\Python36-32\python.exe" driver_3.py bfs 3,1,2,0,4,5,6,7,8
 
 """
 
 import sys
 import math
-import os # to detect windows and omit memory measurement as ru_maxrss is unix only
+import os # to detect windows and omit memory measurement as ru_maxrss doesn't work on Windows
 if os.name != 'nt':
 	import resource
 from collections import deque
 from time import time
 
-class Solver(object):
+class Solver:
 	""" Main class to select method and hold common data structures """
 	def __init__(self, method: str, initState: tuple):
 		super(Solver, self).__init__()
@@ -212,7 +218,7 @@ class Solver(object):
 		self.profiler.runningTimeEnd = time()
 		return False
 
-class Profiler(object):
+class Profiler:
 	""" Class to save and output statistics """
 	def __init__(self):
 		super(Profiler, self).__init__()
@@ -257,7 +263,7 @@ class Profiler(object):
 		file.write(output)
 		print(output)
 
-class Board(object):
+class Board:
 	""" Low-level methods for the board """
 	def __init__(self, state: list, action):
 		super(Board, self).__init__()
