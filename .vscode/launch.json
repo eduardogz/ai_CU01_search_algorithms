@@ -2,28 +2,48 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python",
+            "name": "AI: search bfs,C2",
             "type": "python",
             "request": "launch",
-            "stopOnEntry": true,
-            "pythonPath": "${config.python.pythonPath}",
-            "program": "${file}",
+            "stopOnEntry": false,
+            "pythonPath": "C:\\Program Files (x86)\\Python36-32\\python.exe",
+            "program": "C:\\GitHub\\ai_CU01_search_algorithms\\driver_3.py",
+            "args": [
+                "bfs", "1,2,5,3,4,0,6,7,8"
+            ],
             "cwd": "${workspaceRoot}",
             "debugOptions": [
                 "WaitOnAbnormalExit",
                 "WaitOnNormalExit",
                 "RedirectOutput"
             ]
-        },
-        {
-            "name": "AI: search C2",
+        }, 
+{
+            "name": "AI: search dfs,C2",
             "type": "python",
             "request": "launch",
             "stopOnEntry": false,
             "pythonPath": "C:\\Program Files (x86)\\Python36-32\\python.exe",
-            "program": "${file}",
+            "program": "C:\\GitHub\\ai_CU01_search_algorithms\\driver_3.py",
             "args": [
-                "bfs", "1,2,5,3,4,0,6,7,8"
+                "dfs", "1,2,5,3,4,0,6,7,8"
+            ],
+            "cwd": "${workspaceRoot}",
+            "debugOptions": [
+                "WaitOnAbnormalExit",
+                "WaitOnNormalExit",
+                "RedirectOutput"
+            ]
+        }, 
+        {
+            "name": "AI: search ast,C2",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": false,
+            "pythonPath": "C:\\Program Files (x86)\\Python36-32\\python.exe",
+            "program": "C:\\GitHub\\ai_CU01_search_algorithms\\driver_3.py",
+            "args": [
+                "ast", "1,2,5,3,4,0,6,7,8"
             ],
             "cwd": "${workspaceRoot}",
             "debugOptions": [
