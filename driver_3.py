@@ -9,6 +9,7 @@ from collections import deque
 from time import time
 
 if os.name != 'nt':
+    # pylint: disable=E0401
     import resource
 
 
@@ -44,10 +45,6 @@ class Solver:
                 break
             break
 
-    def create_node(self, state_parent: tuple, action: str, cost: int, depth: int):
-        """ Returns a tuple with the node information to be saved in node_db with the node state as key"""
-        return tuple(list((state_parent, action, cost, depth)))
-
     def set_goal(self):
         """  Generates the goal state, a tuple  from 0 to the size of provided init_state; and gets its ID """
         state_goal = list()
@@ -76,7 +73,7 @@ class Solver:
     def bfs(self):
         """ Breadth First Search (BFS) """
         self.profiler.running_time_start = time()
-        init_node = self.create_node(None, '', 1, 0)  # root node
+        init_node = create_node(None, '', 1, 0)  # root node
         self.node_db[self.init_state] = init_node
         self.fringe.append(self.init_state)
 
@@ -107,7 +104,7 @@ class Solver:
 
                     if (new_state not in self.fringe) and (new_state not in self.explored):
 
-                        self.node_db[new_state] = self.create_node(
+                        self.node_db[new_state] = create_node(
                             state_from_fringe, action, 1, self.node_db[state_from_fringe][3] + 1)
                         self.fringe.append(new_state)
 
@@ -124,7 +121,7 @@ class Solver:
     def dfs(self):
         """ Depth First Search (DFS) """
         self.profiler.running_time_start = time()
-        init_node = self.create_node(None, '', 1, 0)  # root node
+        init_node = create_node(None, '', 1, 0)  # root node
         self.node_db[self.init_state] = init_node
         self.fringe.append(self.init_state)
 
@@ -156,7 +153,7 @@ class Solver:
 
                     if (new_state not in self.fringe) and (new_state not in self.explored):
 
-                        self.node_db[new_state] = self.create_node(
+                        self.node_db[new_state] = create_node(
                             state_from_fringe, action, 1, self.node_db[state_from_fringe][3] + 1)
                         self.fringe.append(new_state)
 
@@ -173,7 +170,7 @@ class Solver:
     def ast(self):
         """ A-Star (A*) """
         self.profiler.running_time_start = time()
-        init_node = self.create_node(None, '', 1, 0)  # root node
+        init_node = create_node(None, '', 1, 0)  # root node
         self.node_db[self.init_state] = init_node
         self.fringe.append(self.init_state)
 
@@ -204,7 +201,7 @@ class Solver:
 
                     if (new_state not in self.fringe) and (new_state not in self.explored):
 
-                        self.node_db[new_state] = self.create_node(
+                        self.node_db[new_state] = create_node(
                             state_from_fringe, action, 1, self.node_db[state_from_fringe][3] + 1)
                         self.fringe.append(new_state)
 
@@ -221,6 +218,7 @@ class Solver:
 
 class Profiler:
     """ Class to save and output statistics """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(self):
         super(Profiler, self).__init__()
@@ -317,11 +315,9 @@ class Board:
 
     def do_action(self, action):
         """ Execute an action to current state and return the resulting new state """
-        try:
-            self.possible_actions.index(action)
-        except ValueError:
-            print('Board.do_action: requested action "' + action + '" NOT possible, ignoring request.')
-            return None
+        if action not in self.possible_actions:
+            print('Board.do_action: requested action "' + action + '" NOT possible, ignoring.')
+            return tuple(list(self.state))
 
         new_state = list(self.state)
 
@@ -350,6 +346,9 @@ class Board:
             new_state[target_cell_index] = 0
             return tuple(new_state)
 
+        print('Board.do_action: UNKNOWN action "' + action + '"!, aborting.')
+        raise ValueError
+
     def pretty_out(self):
         """ A prettier output for debugging """
         state_len = len(self.state)
@@ -361,6 +360,11 @@ class Board:
                 pretty_out += pretty_row + '\n'
                 pretty_row = ''
         return pretty_out
+
+
+def create_node(state_parent: tuple, action: str, cost: int, depth: int):
+    """ Returns a tuple with the node information to be saved in node_db with the node state as key"""
+    return tuple(list((state_parent, action, cost, depth)))
 
 # Entry point
 CLI_METHOD = sys.argv[1]
