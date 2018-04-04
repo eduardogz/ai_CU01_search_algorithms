@@ -5,5 +5,5 @@ fringe_size: 2
 max_fringe_size: 3
 search_depth: 1
 max_search_depth: 1
-running_time: 0.00099897
+running_time: 0.0
 max_ram_usage = 0

@@ -6,7 +6,6 @@ class Board:
     """ Low-level methods for the board """
 
     def __init__(self, state: list, action: str):
-        super(Board, self).__init__()
         self.state = state
         # find and store the board dimension
         self.dim = int(math.sqrt(len(self.state)))
