@@ -1,5 +1,5 @@
 """ A borad representing an n-puzzle"""
-import math
+from math import sqrt, floor
 
 
 class Board:
@@ -8,7 +8,7 @@ class Board:
     def __init__(self, state: list, action: str):
         self.state = state
         # find and store the board dimension
-        self.dim = int(math.sqrt(len(self.state)))
+        self.dim = int(sqrt(len(self.state)))
         self.empty_at_index = 0
         self.possible_actions = []
         self.action = action  # the action that created this board
@@ -27,7 +27,7 @@ class Board:
         row = 0
         # finds row and col where the zero value (empty tile) is at:
         while i < len(self.state):
-            row = math.floor(i / self.dim)
+            row = floor(i / self.dim)
             col = i % self.dim
             if self.state[i] == 0:
                 # print('Found empty slot on: (' + str(row) + ',' + str(col) + ')')
