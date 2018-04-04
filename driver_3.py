@@ -6,8 +6,8 @@ import sys
 from solver import Solver
 
 
-# Entry point
-CLI_METHOD = sys.argv[1]
-CLI_STATE = tuple(map(int, list(sys.argv[2].split(','))))
-print('running: ' + CLI_METHOD + ' on :', CLI_STATE)
-SOLVER = Solver(CLI_METHOD, CLI_STATE)
+METHOD = sys.argv[1]
+STATE = tuple(map(int, list(sys.argv[2].split(','))))
+
+SOLVER = Solver(STATE)
+SOLVER.run(METHOD)

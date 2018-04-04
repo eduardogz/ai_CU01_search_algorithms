@@ -9,7 +9,7 @@ from node_helpers import create_node
 class Solver:
     """ Select a method to solve a puzzle."""
 
-    def __init__(self, method: str, init_state: tuple):
+    def __init__(self, init_state: tuple):
         super(Solver, self).__init__()
         self.init_state = init_state
 
@@ -25,7 +25,9 @@ class Solver:
 
         self.profiler = Profiler()
         self.set_goal()
-
+    
+    def run(self, method: str):
+        """ Run one of the available methods."""
         while True:
             if method == 'bfs':
                 self.bfs()
