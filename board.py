@@ -1,4 +1,4 @@
-""" A borad for a generic"""
+""" A borad representing an n-puzzle"""
 import math
 
 
@@ -20,7 +20,7 @@ class Board:
         return self.possible_actions
 
     def find_possible_actions(self):
-        """ returns a list with the legal actions for the current state """
+        """ Returns a list with the legal actions for the current state """
         self.possible_actions = []
         i = 0
         col = 0
