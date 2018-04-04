@@ -1,4 +1,4 @@
-""" Grgoups all methods to solve the puzzle."""
+""" Solves an n-puzzle."""
 from collections import deque
 from time import time
 from board import Board
@@ -7,20 +7,20 @@ from node_helpers import create_node
 
 
 class Solver:
-    """ Select a method to solve a puzzle."""
-
+    """ Solves an n-puzzle using several tree traversal methods."""
     def __init__(self, init_state: tuple):
-        super(Solver, self).__init__()
         self.init_state = init_state
 
-        # saves states tuples, uses a double ended queue, can behave both as a
-        # FIFO and as a LIFO
+        # saves states tuples, uses a double ended queue;
+        # can behave both as a FIFO queue and as a LIFO stack
         self.fringe = deque()
+
         # saves states tuples; uses a set for speed when checking if a state
         # has been explored
         self.explored = set()
-        # saves nodes details for every node state: nodeState -> nodeParent,
-        # action, cost, depth
+
+        # saves nodes details for every node state:
+        # nodeState -> (nodeParent, action, cost, depth)
         self.node_db = dict()
 
         self.profiler = Profiler()
@@ -28,17 +28,14 @@ class Solver:
 
     def run(self, method: str):
         """ Run one of the available methods."""
-        while True:
-            if method == 'bfs':
-                self.bfs()
-                break
-            if method == 'dfs':
-                self.dfs()
-                break
-            if method == 'ast':
-                self.ast()
-                break
-            break
+        if method == 'bfs':
+            self.bfs()
+        elif method == 'dfs':
+            self.dfs()
+        elif method == 'ast':
+            self.ast()
+        print('Unknown method: ' + method)
+        raise ValueError
 
     def set_goal(self):
         """  Generates the goal state, a tuple  from 0 to the size of provided init_state; and gets its ID """
@@ -47,7 +44,7 @@ class Solver:
         i = 0
         for i in range(length):
             state_goal.append(i)
-        self.state_goal = tuple(state_goal)  # save the list as a tuple
+        self.state_goal = tuple(state_goal)
         # print('state_goal: ', self.state_goal)
 
     def path_to_goal(self, state):
@@ -55,7 +52,7 @@ class Solver:
         solution = list()
         while self.node_db[state][0] is not None:  # root node has None as parent
             solution.append(self.node_db[state][1])
-            # start with the node parent, because when solution is found
+            # start with the node parent because when solution is found
             # node[0] has the goal state
             state = self.node_db[state][0]
             self.profiler.cost_of_path = self.profiler.cost_of_path + \

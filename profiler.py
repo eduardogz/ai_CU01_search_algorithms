@@ -11,7 +11,6 @@ class Profiler:
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self):
-        super(Profiler, self).__init__()
         self.path_to_goal = 0
         self.cost_of_path = 0
         self.nodes_expanded = 0
