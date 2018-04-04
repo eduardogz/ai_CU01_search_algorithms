@@ -34,8 +34,9 @@ class Solver:
             self.dfs()
         elif method == 'ast':
             self.ast()
-        print('Unknown method: ' + method)
-        raise ValueError
+        else:
+            print('Unknown method: ' + method)
+            raise ValueError
 
     def set_goal(self):
         """  Generates the goal state, a tuple  from 0 to the size of provided init_state; and gets its ID """
