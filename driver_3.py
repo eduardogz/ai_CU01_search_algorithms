@@ -7,7 +7,7 @@ from solver import Solver
 
 
 METHOD = sys.argv[1]
-STATE = tuple(map(int, list(sys.argv[2].split(','))))
+INITIAL_STATE = tuple(map(int, list(sys.argv[2].split(','))))
 
-SOLVER = Solver(STATE)
+SOLVER = Solver(INITIAL_STATE)
 SOLVER.run(METHOD)
