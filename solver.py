@@ -25,7 +25,7 @@ class Solver:
 
         self.profiler = Profiler()
         self.set_goal()
-    
+
     def run(self, method: str):
         """ Run one of the available methods."""
         while True:
