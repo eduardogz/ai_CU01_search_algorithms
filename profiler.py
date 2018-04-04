@@ -1,13 +1,13 @@
 """ Keeps track of program execution."""
-import os  # to detect windows and omit memory measurement as ru_maxrss doesn't work on Windows
+from platform import system
 
-if os.name != 'nt':
+if system() == 'Linux':
     # pylint: disable=E0401
-    import resource
+    from resource import getrusage, RUSAGE_SELF
 
 
 class Profiler:
-    """ Class to save and output statistics """
+    """ Gathers and tracks execution statistics """
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self):
@@ -46,11 +46,12 @@ class Profiler:
         output += 'max_search_depth: ' + str(self.max_search_depth) + '\n'
         output += 'running_time: ' + rounded_running_time + '\n'
 
-        if os.name == 'nt':
-            output += 'max_ram_usage = 0\n'
-        else:
+        system_name = system()
+        if system_name == 'Windows':
+            output += 'max_ram_usage: (Not available on Windows OS)'
+        elif system_name == 'Linux':
             output += 'max_ram_usage: ' + \
-                str(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024) + '\n'
+                str(getrusage(RUSAGE_SELF).ru_maxrss / 1024) + '\n'
 
         file = open('output.txt', 'w')
         file.write(output)
