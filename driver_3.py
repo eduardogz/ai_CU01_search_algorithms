@@ -6,7 +6,7 @@ Author: Eduardo Cruz, eduardo.gz@gmail.com
 
 These classes implement various search algorithms to solve an n-puzzle.
 
-Initial state case 1: 3,1,2,0,4,5,6,7,8 
+Initial state case 1: 3,1,2,0,4,5,6,7,8
 Initial state case 2: 1,2,5,3,4,0,6,7,8
 
 Path to python 3.6:
@@ -24,10 +24,11 @@ Example:
 import sys
 import math
 import os  # to detect windows and omit memory measurement as ru_maxrss doesn't work on Windows
-if os.name != 'nt':
-    import resource
 from collections import deque
 from time import time
+
+if os.name != 'nt':
+    import resource
 
 
 class Solver:
@@ -74,12 +75,12 @@ class Solver:
         for i in range(length):
             stateGoal.append(i)
         self.stateGoal = tuple(stateGoal)  # save the list as a tuple
-        #print('stateGoal: ', self.stateGoal)
+        # print('stateGoal: ', self.stateGoal)
 
     def path_to_goal(self, state):
         """ Calculates the path to root and reverses it to provide the path to goal, also prepares profiler stats """
         solution = list()
-        while self.nodeDB[state][0] != None:  # root node has None as parent
+        while self.nodeDB[state][0] is not None:  # root node has None as parent
             solution.append(self.nodeDB[state][1])
             # start with the node parent, because when solution is found
             # node[0] has the goal state
@@ -99,29 +100,29 @@ class Solver:
         self.fringe.append(self.initState)
 
         while self.fringe:  # while fringe not empty
-            #print('*** START ***')
+            # print('*** START ***')
             stateFromFringe = self.fringe.popleft()  # queue
 
             self.explored.add(stateFromFringe)
-            #print('add:', str(nodeFromFringe), 'len(explored): ', len(self.explored))
+            # print('add:', str(nodeFromFringe), 'len(explored): ', len(self.explored))
 
             if stateFromFringe == self.stateGoal:
-                #print('found it! ')
+                # print('found it! ')
                 self.path_to_goal(stateFromFringe)
                 self.profiler.runningTimeEnd = time()
                 self.profiler.write_file()
                 return True
 
             else:
-                #print('exploring node:', str(nodeFromFringe))
+                # print('exploring node:', str(nodeFromFringe))
                 self.profiler.nodesExpanded += 1
                 board = Board(stateFromFringe, self.nodeDB[stateFromFringe][1])
                 # print(board.pretty_out())
                 possibleActions = board.get_possible_actions()
                 for action in possibleActions:
-                    #print('opening action: ', action)
+                    # print('opening action: ', action)
                     newState = board.do_action(action)
-                    #print('new node', str(newState), ', add to fringe: ', len(self.fringe))
+                    # print('new node', str(newState), ', add to fringe: ', len(self.fringe))
 
                     if (newState not in self.fringe) and (newState not in self.explored):
 
@@ -133,7 +134,7 @@ class Solver:
                         self.profiler.update_max_search_depth(
                             self.nodeDB[newState][3])
 
-            #print('*** END ***\n\n')
+            # print('*** END ***\n\n')
             # print(str(self.profiler.nodesExpanded))
 
         self.profiler.runningTimeEnd = time()
@@ -147,30 +148,30 @@ class Solver:
         self.fringe.append(self.initState)
 
         while self.fringe:  # while fringe not empty
-            #print('*** START ***')
+            # print('*** START ***')
             stateFromFringe = self.fringe.pop()  # stack
 
             self.explored.add(stateFromFringe)
-            #print('add:', str(nodeFromFringe), 'len(explored): ', len(self.explored))
+            # print('add:', str(nodeFromFringe), 'len(explored): ', len(self.explored))
 
             if stateFromFringe == self.stateGoal:
-                #print('found it! ')
+                # print('found it! ')
                 self.path_to_goal(stateFromFringe)
                 self.profiler.runningTimeEnd = time()
                 self.profiler.write_file()
                 return True
 
             else:
-                #print('exploring node:', str(nodeFromFringe))
+                # print('exploring node:', str(nodeFromFringe))
                 self.profiler.nodesExpanded += 1
                 board = Board(stateFromFringe, self.nodeDB[stateFromFringe][1])
                 # print(board.pretty_out())
                 possibleActions = board.get_possible_actions()
                 possibleActions.reverse()  # reverse-UDLR order
                 for action in possibleActions:
-                    #print('opening action: ', action)
+                    # print('opening action: ', action)
                     newState = board.do_action(action)
-                    #print('new node', str(newState), ', add to fringe: ', len(self.fringe))
+                    # print('new node', str(newState), ', add to fringe: ', len(self.fringe))
 
                     if (newState not in self.fringe) and (newState not in self.explored):
 
@@ -182,7 +183,7 @@ class Solver:
                         self.profiler.update_max_search_depth(
                             self.nodeDB[newState][3])
 
-            #print('*** END ***\n\n')
+            # print('*** END ***\n\n')
             # print(str(self.profiler.nodesExpanded))
 
         self.profiler.runningTimeEnd = time()
@@ -196,29 +197,29 @@ class Solver:
         self.fringe.append(self.initState)
 
         while self.fringe:  # while fringe not empty
-            #print('*** START ***')
+            # print('*** START ***')
             stateFromFringe = self.fringe.popleft()  # queue
 
             self.explored.add(stateFromFringe)
-            #print('add:', str(nodeFromFringe), 'len(explored): ', len(self.explored))
+            # print('add:', str(nodeFromFringe), 'len(explored): ', len(self.explored))
 
             if stateFromFringe == self.stateGoal:
-                #print('found it! ')
+                # print('found it! ')
                 self.path_to_goal(stateFromFringe)
                 self.profiler.runningTimeEnd = time()
                 self.profiler.write_file()
                 return True
 
             else:
-                #print('exploring node:', str(nodeFromFringe))
+                # print('exploring node:', str(nodeFromFringe))
                 self.profiler.nodesExpanded += 1
                 board = Board(stateFromFringe, self.nodeDB[stateFromFringe][1])
                 # print(board.pretty_out())
                 possibleActions = board.get_possible_actions()
                 for action in possibleActions:
-                    #print('opening action: ', action)
+                    # print('opening action: ', action)
                     newState = board.do_action(action)
-                    #print('new node', str(newState), ', add to fringe: ', len(self.fringe))
+                    # print('new node', str(newState), ', add to fringe: ', len(self.fringe))
 
                     if (newState not in self.fringe) and (newState not in self.explored):
 
@@ -230,7 +231,7 @@ class Solver:
                         self.profiler.update_max_search_depth(
                             self.nodeDB[newState][3])
 
-            #print('*** END ***\n\n')
+            # print('*** END ***\n\n')
             # print(str(self.profiler.nodesExpanded))
 
         self.profiler.runningTimeEnd = time()
@@ -312,7 +313,7 @@ class Board:
             row = math.floor(i / self.dim)
             col = i % self.dim
             if self.state[i] == 0:
-                #print('Found empty slot on: (' + str(row) + ',' + str(col) + ')')
+                # print('Found empty slot on: (' + str(row) + ',' + str(col) + ')')
                 self.emptyAtIndex = i
                 break
             i += 1
@@ -334,7 +335,7 @@ class Board:
         try:
             self.possibleActions.index(action)
         except:
-            #print('Board.do_action: requested action "'+ action + '" NOT possible, ignoring request.')
+            # print('Board.do_action: requested action "'+ action + '" NOT possible, ignoring request.')
             return None
 
         newState = list(self.state)
