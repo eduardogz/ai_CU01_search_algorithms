@@ -6,7 +6,7 @@
             "request": "launch",
             "stopOnEntry": false,
             "pythonPath": "${workspaceRoot}/venv/Scripts/python.exe",
-            "program": "C:\\GitHub\\ai_CU01_search_algorithms\\driver_3.py",
+            "program": "${workspaceRoot}/driver_3.py",
             "args": [
                 "bfs", "1,2,5,3,4,0,6,7,8"
             ],
@@ -21,7 +21,7 @@
             "request": "launch",
             "stopOnEntry": false,
             "pythonPath": "${workspaceRoot}/venv/Scripts/python.exe",
-            "program": "C:\\GitHub\\ai_CU01_search_algorithms\\driver_3.py",
+            "program": "${workspaceRoot}/driver_3.py",
             "args": [
                 "dfs", "3,1,2,0,4,5,6,7,8"
             ],
@@ -36,7 +36,7 @@
             "request": "launch",
             "stopOnEntry": false,
             "pythonPath": "${workspaceRoot}/venv/Scripts/python.exe",
-            "program": "C:\\GitHub\\ai_CU01_search_algorithms\\driver_3.py",
+            "program": "${workspaceRoot}/driver_3.py",
             "args": [
                 "dfs", "1,2,5,3,4,0,6,7,8"
             ],
@@ -51,7 +51,7 @@
             "request": "launch",
             "stopOnEntry": false,
             "pythonPath": "${workspaceRoot}/venv/Scripts/python.exe",
-            "program": "C:\\GitHub\\ai_CU01_search_algorithms\\driver_3.py",
+            "program": "${workspaceRoot}/driver_3.py",
             "args": [
                 "ast", "1,2,5,3,4,0,6,7,8"
             ],
