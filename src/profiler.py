@@ -52,6 +52,6 @@ class Profiler:
             output += 'max_ram_usage: ' + \
                 str(getrusage(RUSAGE_SELF).ru_maxrss / 1024) + '\n'
 
-        file = open('output.txt', 'w')
+        file = open('output.txt', 'w+')
         file.write(output)
         print(output)
